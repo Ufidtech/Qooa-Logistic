@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QOOA - Vendor Registration</title>
+    <link rel="stylesheet" href="css/vendor-styles.css" />
+  </head>
+  <body class="onboarding-page">
+    <!-- Language Toggle -->
+    <div class="language-toggle">
+      <button id="langToggle" class="lang-btn">
+        <span class="lang-icon">🌐</span>
+        <span id="currentLang">English</span>
+      </button>
+    </div>
+
+    <!-- Onboarding Container -->
+    <div class="onboarding-container">
+      <div class="onboarding-card">
+        <div class="logo-section">
+          <h1>🍅 QOOA</h1>
+          <p class="tagline" data-lang="tagline">Fresh Tomatoes, Fair Prices</p>
+        </div>
+
+        <h2 data-lang="vendor-registration">Vendor Registration</h2>
+        <p class="subtitle" data-lang="join-qooa">
+          Join the QOOA network today
+        </p>
+
+        <form id="registrationForm">
+          <div class="form-group">
+            <label for="vendorName" data-lang="vendor-name"
+              >Vendor Name / Business Name</label
+            >
+            <input
+              type="text"
+              id="vendorName"
+              name="vendorName"
+              required
+              data-lang-placeholder="vendor-name-placeholder"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="phoneNumber" data-lang="phone-number"
+              >Phone Number</label
+            >
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              placeholder="+234 xxx xxx xxxx"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email" data-lang="email"
+              >Email Address (Optional)</label
+            >
+            <input
+              type="email"
+              id="email"
+              name="email"
+              data-lang-placeholder="email-placeholder"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="marketCluster" data-lang="market-location"
+              >Market Location / Cluster</label
+            >
+            <select id="marketCluster" name="marketCluster" required>
+              <option value="" data-lang="select-market">
+                -- Select Your Market --
+              </option>
+              <option value="mile12">Mile 12 Market, Lagos</option>
+              <option value="daleko">Daleko Market, Lagos</option>
+              <option value="oyingbo">Oyingbo Market, Lagos</option>
+              <option value="tejuosho">Tejuosho Market, Lagos</option>
+              <option value="oke-arin">Oke-Arin Market, Lagos Island</option>
+              <option value="ikeja">Computer Village Area, Ikeja</option>
+              <option value="alaba">Alaba International, Ojo</option>
+              <option value="onitsha">Onitsha Main Market, Anambra</option>
+              <option value="ariaria">Ariaria Market, Aba</option>
+              <option value="bodija">Bodija Market, Ibadan</option>
+              <option value="other">Other (Please specify)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="otherMarketGroup" style="display: none">
+            <label for="otherMarket" data-lang="specify-market"
+              >Specify Market Name</label
+            >
+            <input
+              type="text"
+              id="otherMarket"
+              name="otherMarket"
+              data-lang-placeholder="market-name-placeholder"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="stallNumber" data-lang="stall-number"
+              >Stall Number / Shop Address</label
+            >
+            <input
+              type="text"
+              id="stallNumber"
+              name="stallNumber"
+              required
+              data-lang-placeholder="stall-placeholder"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessType" data-lang="business-type"
+              >Business Type</label
+            >
+            <select id="businessType" name="businessType" required>
+              <option value="" data-lang="select-type">
+                -- Select Type --
+              </option>
+              <option value="mama-put" data-lang="mama-put">
+                Mama Put / Food Seller
+              </option>
+              <option value="retailer" data-lang="retailer">
+                Tomato Retailer
+              </option>
+              <option value="wholesaler" data-lang="wholesaler">
+                Wholesaler
+              </option>
+              <option value="restaurant" data-lang="restaurant">
+                Restaurant Owner
+              </option>
+              <option value="caterer" data-lang="caterer">Caterer</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label data-lang="typical-order">Typical Order Size (Weekly)</label>
+            <select id="orderSize" name="orderSize" required>
+              <option value="1-2" data-lang="small-order">1-2 crates</option>
+              <option value="3-5" data-lang="medium-order">3-5 crates</option>
+              <option value="6-10" data-lang="large-order">6-10 crates</option>
+              <option value="10+" data-lang="bulk-order">
+                10+ crates (Bulk)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="terms" name="terms" required />
+              <span data-lang="agree-terms"
+                >I agree to QOOA's terms and conditions</span
+              >
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            class="btn-primary btn-large"
+            data-lang="register"
+          >
+            Register Now
+          </button>
+
+          <p class="form-footer">
+            <span data-lang="have-account">Already have an account?</span>
+            <a href="vendor-login.html" data-lang="login-here">Login here</a>
+          </p>
+        </form>
+      </div>
+
+      <!-- Info Panel -->
+      <div class="info-panel">
+        <h3 data-lang="why-qooa">Why Join QOOA?</h3>
+        <ul class="benefits-list">
+          <li>
+            <span class="benefit-icon">🌡️</span>
+            <div>
+              <strong data-lang="benefit-fresh"
+                >Guaranteed Fresh Tomatoes</strong
+              >
+              <p data-lang="benefit-fresh-desc">
+                Temperature-monitored from farm to your stall
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-icon">💰</span>
+            <div>
+              <strong data-lang="benefit-prices">Stable, Fair Prices</strong>
+              <p data-lang="benefit-prices-desc">
+                No surprise price hikes, transparent pricing
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-icon">🚚</span>
+            <div>
+              <strong data-lang="benefit-tracking">Real-Time Tracking</strong>
+              <p data-lang="benefit-tracking-desc">
+                Know exactly when your order arrives
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-icon">📱</span>
+            <div>
+              <strong data-lang="benefit-easy">Easy Mobile Ordering</strong>
+              <p data-lang="benefit-easy-desc">
+                Order from your phone anytime, anywhere
+              </p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+      <div class="modal-content">
+        <div class="success-animation">✅</div>
+        <h2 data-lang="registration-success">Registration Successful!</h2>
+        <p data-lang="success-message">
+          Welcome to QOOA! Your vendor account has been created successfully.
+        </p>
+        <p data-lang="success-note">
+          You will receive a confirmation SMS shortly with your login details.
+        </p>
+        <button
+          class="btn-primary btn-large"
+          id="goToLoginBtn"
+          data-lang="go-to-login"
+        >
+          Go to Login
+        </button>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/vendor-translations.js"></script>
+    <script src="js/vendor-onboarding.js"></script>
+  </body>
+</html>
