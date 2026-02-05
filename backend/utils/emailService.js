@@ -3,7 +3,8 @@ const crypto = require("crypto");
 
 // Create email transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  // nodemailer uses createTransport (not createTransporter)
+  return nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || "gmail",
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT || 587,
@@ -24,7 +25,10 @@ const generateVerificationToken = () => {
 const sendVerificationEmail = async (vendor, token) => {
   const transporter = createTransporter();
 
-  const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${token}&email=${vendor.email}`;
+  // Build verification URL that points to the backend verify endpoint by default.
+  // Prefer explicit BACKEND_URL if set, fall back to BASE_URL for compatibility.
+  const backendBase = process.env.BACKEND_URL || process.env.BASE_URL || '';
+  const verificationUrl = `${backendBase.replace(/\/$/, '')}/api/auth/verify-email?token=${token}&email=${vendor.email}`;
 
   const mailOptions = {
     from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
@@ -184,31 +188,74 @@ const sendPasswordResetEmail = async (vendor, resetToken) => {
   if (!vendor.email) return;
 
   const transporter = createTransporter();
-  const resetUrl = `${process.env.BASE_URL}/reset-password?token=${resetToken}&email=${vendor.email}`;
+  // Password reset link is intended to open the frontend reset page (so user can enter a new password).
+  // Prefer FRONTEND_URL if set, otherwise fall back to BASE_URL for compatibility.
+    // Prefer BACKEND_URL so the link hits the backend reset endpoint which can validate and redirect to the frontend.
+    const backendUrl = process.env.BACKEND_URL && process.env.BACKEND_URL.trim();
+    const frontendBase = process.env.FRONTEND_URL || process.env.BASE_URL || '';
+    let resetUrl;
+    if (backendUrl) {
+      resetUrl = `${backendUrl.replace(/\/$/, '')}/api/auth/reset-password?token=${resetToken}&email=${vendor.email}`;
+      console.log(`Building password reset link using BACKEND_URL: ${resetUrl}`);
+    } else {
+      // Fallback to direct frontend token flow (frontend will POST to backend to complete reset)
+      // Note: frontend file is `resetpassword.html` (no hyphen)
+      resetUrl = `${frontendBase.replace(/\/$/, '')}/resetpassword.html?token=${resetToken}&email=${vendor.email}`;
+      console.log(`BACKEND_URL not set — building password reset link to FRONTEND for token flow: ${resetUrl}`);
+    }
 
   const mailOptions = {
     from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
     to: vendor.email,
     subject: "Reset Your QOOA Password",
     html: `
-      <!DOCTYPE html>
-      <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Password Reset Request</h2>
-          <p>Hi ${vendor.vendorName},</p>
-          <p>We received a request to reset your QOOA account password. Click the button below to reset it:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="display: inline-block; padding: 15px 30px; background: #047857; color: white; text-decoration: none; border-radius: 6px;">Reset Password</a>
+      <!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:#f3f4f6; margin:0; padding:0; }
+          .email-wrap { width:100%; background:#f3f4f6; padding:24px 0; }
+          .email-body { max-width:600px; margin:0 auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 6px 18px rgba(15,23,42,0.08); }
+          .header { background: linear-gradient(90deg,#059669,#047857); color:#fff; padding:28px 24px; text-align:center; }
+          .header h1 { margin:0; font-size:20px; }
+          .content { padding:24px; color:#0f172a; }
+          .button { display:inline-block; background:#047857; color:#fff; text-decoration:none; padding:12px 22px; border-radius:6px; font-weight:600; }
+          .small { color:#6b7280; font-size:13px; }
+          .footer { padding:16px 24px; text-align:center; font-size:12px; color:#9ca3af; }
+          .link { word-break: break-all; color:#047857; }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrap">
+          <div class="email-body">
+            <div class="header">
+              <h1>QOOA — Password Reset</h1>
+            </div>
+            <div class="content">
+              <p style="margin:0 0 12px 0;">Hi ${vendor.vendorName || 'there'},</p>
+              <p style="margin:0 0 16px 0;">You (or someone using your email) requested a password reset for your QOOA account. Click the button below to set a new password. This link is valid for 1 hour.</p>
+
+              <p style="text-align:center; margin:18px 0;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </p>
+
+              <p style="margin:12px 0 0 0;" class="small">If the button doesn't work, copy and paste the link below into your browser:</p>
+              <p class="link" style="margin:6px 0 0 0;"><a href="${resetUrl}" style="color:#047857; text-decoration:none;">${resetUrl}</a></p>
+
+              <hr style="border:none;border-top:1px solid #eef2f7;margin:20px 0" />
+
+              <p class="small" style="margin:0 0 8px 0;">If you didn't request a password reset, you can safely ignore this email — no changes will be made to your account.</p>
+              <p class="small" style="margin:0 0 8px 0;">Need help? Contact us at <a href="mailto:${process.env.EMAIL_FROM_ADDRESS}" style="color:#047857;text-decoration:none;">${process.env.EMAIL_FROM_ADDRESS}</a></p>
+            </div>
+            <div class="footer">QOOA • Fresh Tomatoes, Fair Prices</div>
           </div>
-          <p>Or copy and paste this link: ${resetUrl}</p>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <p>Best regards,<br>The QOOA Team</p>
         </div>
       </body>
       </html>
     `,
+    text: `Reset your QOOA password\n\nOpen this link to reset your password (valid 1 hour): ${resetUrl}\n\nIf you didn't request this, ignore this email.`,
   };
 
   try {
@@ -226,3 +273,17 @@ module.exports = {
   sendPasswordResetEmail,
   generateVerificationToken,
 };
+
+// Verify transporter - useful at startup to confirm email settings
+const verifyTransporter = async () => {
+  try {
+    const transporter = createTransporter();
+    // nodemailer transports expose verify()
+    await transporter.verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
+  }
+};
+
+module.exports.verifyTransporter = verifyTransporter;

@@ -1,5 +1,5 @@
 const Order = require("../models/Order");
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 const Pricing = require("../models/Pricing");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const { sendOrderConfirmationEmail } = require("../utils/emailService");

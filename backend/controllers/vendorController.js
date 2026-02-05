@@ -1,4 +1,4 @@
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 const { generateToken } = require("../middleware/authMiddleware");
 const {
   generateVerificationToken,
@@ -16,6 +16,7 @@ const registerVendor = asyncHandler(async (req, res) => {
   const {
     vendorName,
     phoneNumber,
+    whatsappNumber,
     email,
     password,
     marketCluster,
@@ -24,9 +25,16 @@ const registerVendor = asyncHandler(async (req, res) => {
     language,
   } = req.body;
 
+  // Normalize phone numbers to common E.164 form for storage/lookup
+  const { normalizeToE164, lookupVariants } = require('../utils/phoneUtils');
+  const normalizedPhone = normalizeToE164(phoneNumber);
+  const normalizedWhatsapp = normalizeToE164(whatsappNumber || phoneNumber);
+
   // Check if vendor already exists
+  // Accept multiple lookup variants (0813..., +234813..., 813...)
+  const phoneVariants = lookupVariants(phoneNumber);
   const vendorExists = await Vendor.findOne({
-    $or: [{ phoneNumber }, { email }],
+    $or: [{ phoneNumber: { $in: phoneVariants } }, { email }],
   });
 
   if (vendorExists) {
@@ -45,8 +53,10 @@ const registerVendor = asyncHandler(async (req, res) => {
 
   // Create vendor
   const vendor = await Vendor.create({
+    vendorId: Vendor.generateVendorId(),
     vendorName,
-    phoneNumber,
+    phoneNumber: normalizedPhone,
+    whatsappNumber: normalizedWhatsapp,
     email,
     password, // Will be hashed by pre-save hook
     marketCluster,
@@ -84,6 +94,7 @@ const registerVendor = asyncHandler(async (req, res) => {
         vendorId: vendor.vendorId,
         vendorName: vendor.vendorName,
         phoneNumber: vendor.phoneNumber,
+          whatsappNumber: vendor.whatsappNumber,
         email: vendor.email,
         emailVerified: vendor.emailVerified,
         marketCluster: vendor.marketCluster,
@@ -106,10 +117,12 @@ const registerVendor = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const loginVendor = asyncHandler(async (req, res) => {
-  const { phoneNumber, password } = req.body;
+  const { phoneNumber: rawPhone, password } = req.body;
+  const { normalizeToE164, lookupVariants } = require('../utils/phoneUtils');
+  const phoneVariants = lookupVariants(rawPhone);
 
-  // Find vendor and include password field
-  const vendor = await Vendor.findOne({ phoneNumber }).select("+password");
+  // Find vendor and include password field. Accept variants (0-prefixed, +234, local)
+  const vendor = await Vendor.findOne({ phoneNumber: { $in: phoneVariants } }).select("+password");
 
   if (!vendor) {
     return res.status(401).json({
@@ -151,6 +164,7 @@ const loginVendor = asyncHandler(async (req, res) => {
       vendorId: vendor.vendorId,
       vendorName: vendor.vendorName,
       phoneNumber: vendor.phoneNumber,
+      whatsappNumber: vendor.whatsappNumber,
       email: vendor.email,
       emailVerified: vendor.emailVerified,
       marketCluster: vendor.marketCluster,
@@ -173,10 +187,18 @@ const verifyEmail = asyncHandler(async (req, res) => {
   const { token, email } = req.query;
 
   if (!token || !email) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid verification link",
-    });
+    // If the request expects JSON, return JSON; otherwise redirect to frontend with status
+    const frontendBase = process.env.FRONTEND_URL || process.env.BASE_URL || '';
+    const wantsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
+    if (wantsJson) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification link',
+      });
+    }
+
+    const redirectUrl = `${frontendBase.replace(/\/$/, '')}/verify-email.html?status=failed&message=${encodeURIComponent('Invalid verification link')}`;
+    return res.redirect(302, redirectUrl);
   }
 
   // Find vendor with valid token
@@ -187,10 +209,17 @@ const verifyEmail = asyncHandler(async (req, res) => {
   });
 
   if (!vendor) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid or expired verification token",
-    });
+    const frontendBase = process.env.FRONTEND_URL || process.env.BASE_URL || '';
+    const wantsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
+    if (wantsJson) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token',
+      });
+    }
+
+    const redirectUrl = `${frontendBase.replace(/\/$/, '')}/verify-email.html?status=failed&message=${encodeURIComponent('Invalid or expired verification token')}`;
+    return res.redirect(302, redirectUrl);
   }
 
   // Update vendor
@@ -198,11 +227,18 @@ const verifyEmail = asyncHandler(async (req, res) => {
   vendor.emailVerificationToken = undefined;
   vendor.emailVerificationExpires = undefined;
   await vendor.save();
+  // On success, redirect to frontend verify page with success status (or return JSON if requested)
+  const frontendBase = process.env.FRONTEND_URL || process.env.BASE_URL || '';
+  const wantsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
+  if (wantsJson) {
+    return res.json({
+      success: true,
+      message: 'Email verified successfully! You can now access all features.',
+    });
+  }
 
-  res.json({
-    success: true,
-    message: "Email verified successfully! You can now access all features.",
-  });
+  const redirectUrl = `${frontendBase.replace(/\/$/, '')}/verify-email.html?status=success&email=${encodeURIComponent(email)}`;
+  return res.redirect(302, redirectUrl);
 });
 
 // @desc    Resend verification email
@@ -257,6 +293,7 @@ const getVendorProfile = asyncHandler(async (req, res) => {
       vendorId: vendor.vendorId,
       vendorName: vendor.vendorName,
       phoneNumber: vendor.phoneNumber,
+      whatsappNumber: vendor.whatsappNumber,
       email: vendor.email,
       emailVerified: vendor.emailVerified,
       marketCluster: vendor.marketCluster,
@@ -283,6 +320,7 @@ const updateVendorProfile = asyncHandler(async (req, res) => {
     // Only allow certain fields to be updated
     vendor.vendorName = req.body.vendorName || vendor.vendorName;
     vendor.stallNumber = req.body.stallNumber || vendor.stallNumber;
+    vendor.whatsappNumber = req.body.whatsappNumber || vendor.whatsappNumber;
     vendor.language = req.body.language || vendor.language;
 
     // If updating email, require re-verification
@@ -309,6 +347,7 @@ const updateVendorProfile = asyncHandler(async (req, res) => {
         vendorId: updatedVendor.vendorId,
         vendorName: updatedVendor.vendorName,
         phoneNumber: updatedVendor.phoneNumber,
+        whatsappNumber: updatedVendor.whatsappNumber,
         email: updatedVendor.email,
         emailVerified: updatedVendor.emailVerified,
         marketCluster: updatedVendor.marketCluster,
@@ -342,11 +381,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   // Generate reset token
   const resetToken = crypto.randomBytes(32).toString("hex");
-  vendor.passwordResetToken = crypto
+  vendor.resetPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  vendor.passwordResetExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+  vendor.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
   await vendor.save({ validateBeforeSave: false });
 
   // Send email
@@ -358,8 +397,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
       message: "Password reset link sent to your email",
     });
   } catch (error) {
-    vendor.passwordResetToken = undefined;
-    vendor.passwordResetExpires = undefined;
+    vendor.resetPasswordToken = undefined;
+    vendor.resetPasswordExpires = undefined;
     await vendor.save({ validateBeforeSave: false });
 
     return res.status(500).json({
@@ -367,6 +406,48 @@ const forgotPassword = asyncHandler(async (req, res) => {
       message: "Error sending password reset email",
     });
   }
+});
+
+// @desc    Show reset password page / validate reset token
+// @route   GET /api/auth/reset-password
+// @access  Public
+const getResetPassword = asyncHandler(async (req, res) => {
+  const { token, email } = req.query;
+
+  const frontendBase = process.env.FRONTEND_URL || process.env.BASE_URL || '';
+  const wantsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
+
+  if (!token || !email) {
+    if (wantsJson) {
+      return res.status(400).json({ success: false, message: 'Invalid reset link' });
+    }
+    const redirectUrl = `${frontendBase.replace(/\/$/, '')}/resetpassword.html?status=failed&message=${encodeURIComponent('Invalid reset link')}`;
+    return res.redirect(302, redirectUrl);
+  }
+
+  // Verify token
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const vendor = await Vendor.findOne({
+    email,
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!vendor) {
+    if (wantsJson) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+    const redirectUrl = `${frontendBase.replace(/\/$/, '')}/resetpassword.html?status=failed&message=${encodeURIComponent('Invalid or expired reset token')}`;
+    return res.redirect(302, redirectUrl);
+  }
+
+  // Token valid — redirect to frontend reset page with token (frontend will POST to complete reset)
+  if (wantsJson) {
+    return res.json({ success: true, message: 'Reset token valid' });
+  }
+
+  const redirectUrl = `${frontendBase.replace(/\/$/, '')}/resetpassword.html?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+  return res.redirect(302, redirectUrl);
 });
 
 // @desc    Reset password
@@ -380,8 +461,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   const vendor = await Vendor.findOne({
     email,
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() },
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() },
   });
 
   if (!vendor) {
@@ -393,8 +474,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   // Set new password
   vendor.password = newPassword;
-  vendor.passwordResetToken = undefined;
-  vendor.passwordResetExpires = undefined;
+  vendor.resetPasswordToken = undefined;
+  vendor.resetPasswordExpires = undefined;
   await vendor.save();
 
   res.json({
@@ -413,4 +494,5 @@ module.exports = {
   updateVendorProfile,
   forgotPassword,
   resetPassword,
+  getResetPassword,
 };

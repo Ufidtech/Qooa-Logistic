@@ -7,6 +7,7 @@ const {
   resendVerificationEmail,
   forgotPassword,
   resetPassword,
+  getResetPassword,
 } = require("../controllers/vendorController");
 const {
   validateRegister,
@@ -30,5 +31,8 @@ router.post("/forgot-password", forgotPassword);
 
 // @route   POST /api/auth/reset-password
 router.post("/reset-password", resetPassword);
+
+// @route   GET /api/auth/reset-password
+router.get("/reset-password", getResetPassword);
 
 module.exports = router;

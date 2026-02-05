@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 
 // Protect routes - verify JWT token
 const protect = async (req, res, next) => {

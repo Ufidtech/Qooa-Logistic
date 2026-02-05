@@ -38,6 +38,7 @@
               id="vendorName"
               name="vendorName"
               required
+              placeholder="Vendor or business name"
               data-lang-placeholder="vendor-name-placeholder"
             />
           </div>
@@ -56,15 +57,41 @@
           </div>
 
           <div class="form-group">
+            <label for="whatsappNumber">WhatsApp Number (for notifications)</label>
+            <input
+              type="tel"
+              id="whatsappNumber"
+              name="whatsappNumber"
+              placeholder="+234 80x xxx xxxx"
+              aria-describedby="whatsappHelp"
+            />
+            <small id="whatsappHelp" class="form-help">Please provide the phone number you use on WhatsApp including country code (e.g. +2348012345678). This number will be used to send WhatsApp notifications about orders and tracking.</small>
+          </div>
+
+          <div class="form-group">
             <label for="email" data-lang="email"
-              >Email Address (Optional)</label
+              >Email Address</label
             >
             <input
               type="email"
               id="email"
               name="email"
+              required
+              placeholder="you@business.com"
               data-lang-placeholder="email-placeholder"
             />
+          </div>
+
+          <div class="form-group" style="position:relative">
+            <label for="password" data-lang="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              placeholder="At least 8 characters, mixed case and a number"
+            />
+            <button type="button" id="togglePassword" title="Show password" style="position:absolute; right:12px; top:36px; background:none; border:none; cursor:pointer;">👁️</button>
           </div>
 
           <div class="form-group">
@@ -75,16 +102,12 @@
               <option value="" data-lang="select-market">
                 -- Select Your Market --
               </option>
-              <option value="mile12">Mile 12 Market, Lagos</option>
-              <option value="daleko">Daleko Market, Lagos</option>
-              <option value="oyingbo">Oyingbo Market, Lagos</option>
-              <option value="tejuosho">Tejuosho Market, Lagos</option>
-              <option value="oke-arin">Oke-Arin Market, Lagos Island</option>
-              <option value="ikeja">Computer Village Area, Ikeja</option>
-              <option value="alaba">Alaba International, Ojo</option>
-              <option value="onitsha">Onitsha Main Market, Anambra</option>
-              <option value="ariaria">Ariaria Market, Aba</option>
-              <option value="bodija">Bodija Market, Ibadan</option>
+              <option value="Mile 12">Mile 12 Market, Lagos</option>
+              <option value="Oshodi">Oshodi Market, Lagos</option>
+              <option value="Oyingbo">Oyingbo Market, Lagos</option>
+              <option value="Ikeja">Ikeja</option>
+              <option value="Mushin">Mushin</option>
+              <option value="Other">Other (Please specify)</option>
               <option value="other">Other (Please specify)</option>
             </select>
           </div>
@@ -97,6 +120,7 @@
               type="text"
               id="otherMarket"
               name="otherMarket"
+              placeholder="Specify your market name (e.g. Mile 12)"
               data-lang-placeholder="market-name-placeholder"
             />
           </div>
@@ -110,6 +134,7 @@
               id="stallNumber"
               name="stallNumber"
               required
+              placeholder="Stall/shop address (e.g. Stall 12, Block A)"
               data-lang-placeholder="stall-placeholder"
             />
           </div>
@@ -125,16 +150,12 @@
               <option value="mama-put" data-lang="mama-put">
                 Mama Put / Food Seller
               </option>
-              <option value="retailer" data-lang="retailer">
-                Tomato Retailer
-              </option>
-              <option value="wholesaler" data-lang="wholesaler">
-                Wholesaler
-              </option>
+              <option value="retailer" data-lang="retailer">Retailer</option>
+              <option value="wholesaler" data-lang="wholesaler">Wholesaler</option>
               <option value="restaurant" data-lang="restaurant">
                 Restaurant Owner
               </option>
-              <option value="caterer" data-lang="caterer">Caterer</option>
+              <option value="caterer" data-lang="caterer">Catering / Caterer</option>
             </select>
           </div>
 
@@ -169,7 +190,7 @@
 
           <p class="form-footer">
             <span data-lang="have-account">Already have an account?</span>
-            <a href="vendor-login.html" data-lang="login-here">Login here</a>
+            <a href="login.html" data-lang="login-here">Login here</a>
           </p>
         </form>
       </div>
@@ -228,9 +249,9 @@
         <p data-lang="success-message">
           Welcome to QOOA! Your vendor account has been created successfully.
         </p>
-        <p data-lang="success-note">
-          You will receive a confirmation SMS shortly with your login details.
-        </p>
+         <p data-lang="success-note">
+           Please check your email and click the verification link we sent to activate your account. Once verified you can log in using your phone number and password.
+         </p>
         <button
           class="btn-primary btn-large"
           id="goToLoginBtn"
@@ -243,6 +264,12 @@
 
     <!-- Scripts -->
     <script src="js/vendor-translations.js"></script>
+    <script>
+      // Configure backend URL for the frontend. If you serve the frontend
+      // from a static server, set FRONTEND_URL env and ensure CORS allows it.
+      // Default to localhost:3000 where the backend runs during development.
+      window.BACKEND_URL = window.BACKEND_URL || "http://localhost:3000";
+    </script>
     <script src="js/vendor-onboarding.js"></script>
   </body>
 </html>

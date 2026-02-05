@@ -321,7 +321,6 @@ function formatHumidity(humidity) {
   return `${humidity}%`;
 }
 
-// ========== VALIDATION HELPERS ==========
 /**
  * Validate temperature reading
  * @param {number} temp - Temperature value
@@ -350,7 +349,6 @@ function isValidEmail(email) {
   return emailRegex.test(email);
 }
 
-// ========== DATA SORTING ==========
 /**
  * Sort shipments by quality status (Red first, then Orange, then Green)
  * @param {array} shipments - Array of shipment objects

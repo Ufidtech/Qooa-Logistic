@@ -1,6 +1,6 @@
 const Telemetry = require("../models/Telemetry");
 const Order = require("../models/Order");
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 const whatsappService = require("../utils/whatsappService");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 

@@ -1,6 +1,7 @@
 // QOOA Backend API - MongoDB Express Server
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
@@ -38,8 +39,25 @@ connectDB();
 app.use(helmet());
 
 // CORS configuration
+// Allow the configured FRONTEND_URL, some common local dev origins and
+// requests without an origin (file:// or some dev servers that set null).
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:8080").split(",");
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:8000",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (e.g. file:// or some tools)
+    if (!origin) return callback(null, true);
+
+    // Allow if origin is in allowedOrigins or matches common local ports
+    if (allowedOrigins.indexOf(origin) !== -1 || [
+      'http://localhost:8000',
+      'http://localhost:8080',
+      'http://localhost:3000',
+    ].includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'), false);
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -100,6 +118,17 @@ io.on("connection", (socket) => {
 // Make io accessible in routes
 app.set("io", io);
 
+// Serve frontend static files from the repository's frontend/ directory
+// This makes the app serve HTML/CSS/JS on the same origin (http://localhost:3000)
+// so the browser won't hit CORS issues during development.
+const frontendDir = path.join(__dirname, "..", "frontend");
+app.use(express.static(frontendDir));
+
+// If a file is not found, fall back to index.html for client-side routing (optional)
+app.get(["/", "/vendor-onboarding.html", "/login.html", "/signup.html", "/forgot-password.html", "/resetpassword.html"], (req, res) => {
+  res.sendFile(path.join(frontendDir, req.path === "/" ? "index.html" : req.path.replace(/^\//, "")));
+});
+
 // ========== API ROUTES ==========
 
 // Health check
@@ -112,11 +141,23 @@ app.get("/", (req, res) => {
   });
 });
 
+// Serve the single-file frontend for quick local demo
+app.get("/single-frontend", (req, res) => {
+  const filePath = path.join(__dirname, "..", "frontend", "index.html");
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("Failed to send frontend/index.html:", err);
+      res.status(500).send("Unable to load frontend file.");
+    }
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
     status: "healthy",
     database: "connected",
+    email: app.locals.emailStatus || "unknown",
     timestamp: new Date().toISOString(),
   });
 });
@@ -152,6 +193,12 @@ function emitTrackingUpdate(orderId, trackingData) {
 // Make emitTrackingUpdate available globally
 global.emitTrackingUpdate = emitTrackingUpdate;
 
+// ========== EMAIL READINESS CHECK =========
+const { verifyTransporter } = require("./utils/emailService");
+
+// Initialize email status as unknown. We'll check on server start.
+app.locals.emailStatus = "unknown";
+
 // ========== START SERVER =========
 
 const PORT = process.env.PORT || 3000;
@@ -160,6 +207,23 @@ server.listen(PORT, () => {
   console.log("=".repeat(50));
   console.log("🍅 QOOA Backend Server - MongoDB Version");
   console.log("=".repeat(50));
+
+  // Check email transporter readiness and log it
+  (async () => {
+    try {
+      const result = await verifyTransporter();
+      if (result.ok) {
+        app.locals.emailStatus = "ready";
+        console.log("📧 Email transporter: ready to send");
+      } else {
+        app.locals.emailStatus = `error: ${result.error}`;
+        console.warn("⚠️ Email transporter not ready:", result.error);
+      }
+    } catch (err) {
+      app.locals.emailStatus = `error: ${err.message || err}`;
+      console.warn("⚠️ Email transporter check failed:", err);
+    }
+  })();
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);

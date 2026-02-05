@@ -1,6 +1,6 @@
 const Feedback = require("../models/Feedback");
 const Order = require("../models/Order");
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const { uploadToCloudinary } = require("../utils/uploadService");
 

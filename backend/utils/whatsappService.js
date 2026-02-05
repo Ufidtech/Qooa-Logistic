@@ -12,25 +12,26 @@ class WhatsAppService {
   // Send text message
   async sendMessage(to, message, language = "en") {
     try {
+      const cleaned = String(to || '').replace(/[^0-9]/g, '');
+      // Defensive: ensure number looks reasonable
+      if (!cleaned || cleaned.length < 8) {
+        const err = new Error(`Invalid phone number for WhatsApp: ${to}`);
+        console.error(err.message);
+        throw err;
+      }
+
       const response = await axios.post(
         `${this.apiUrl}/${this.phoneNumberId}/messages`,
         {
           messaging_product: "whatsapp",
-          to: to.replace(/[^0-9]/g, ""), // Clean phone number
+          to: cleaned,
           type: "text",
-          text: {
-            body: message,
-          },
+          text: { body: message },
         },
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        },
+        { headers: { Authorization: `Bearer ${this.accessToken}`, "Content-Type": "application/json" } },
       );
 
-      console.log(`WhatsApp message sent to ${to}`);
+      console.log(`WhatsApp message sent to ${to} (cleaned: ${cleaned})`);
       return response.data;
     } catch (error) {
       console.error(
@@ -99,7 +100,8 @@ class WhatsAppService {
         ? `Welcome to QOOA, ${vendor.vendorName}! 🍅\n\nYour vendor account don ready. You fit start to order fresh tomato now.\n\nYour Vendor ID: ${vendor.vendorId}\nMarket: ${vendor.marketCluster}\nStall: ${vendor.stallNumber}\n\nCheck your email to verify your account.\n\nThanks for joining us!`
         : `Welcome to QOOA, ${vendor.vendorName}! 🍅\n\nYour vendor account is now active. You can start ordering fresh tomatoes.\n\nVendor ID: ${vendor.vendorId}\nMarket: ${vendor.marketCluster}\nStall: ${vendor.stallNumber}\n\nPlease check your email to verify your account.\n\nThank you for joining QOOA!`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+      const to = vendor.whatsappNumber || vendor.phoneNumber;
+      return await this.sendMessage(to, message, vendor.language);
   }
 
   // Send order confirmation
@@ -109,7 +111,8 @@ class WhatsAppService {
         ? `✅ Order Confirmed!\n\nYour order don enter successfully, ${vendor.vendorName}.\n\nOrder ID: ${order.orderId}\nQuantity: ${order.crateQuantity} crates\nTotal: ₦${order.totalAmount.toLocaleString()}\nDelivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}\n\nWe go send you update as your order dey move.\n\nThank you! 🍅`
         : `✅ Order Confirmed!\n\nYour order has been confirmed, ${vendor.vendorName}.\n\nOrder ID: ${order.orderId}\nQuantity: ${order.crateQuantity} crates\nTotal: ₦${order.totalAmount.toLocaleString()}\nDelivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}\n\nWe'll keep you updated on your order status.\n\nThank you! 🍅`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+      const to = vendor.whatsappNumber || vendor.phoneNumber;
+      return await this.sendMessage(to, message, vendor.language);
   }
 
   // Send tracking update
@@ -133,7 +136,8 @@ class WhatsAppService {
     const message =
       stageMessages[lang][stage] || `Order ${order.orderId} status: ${stage}`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+      const to = vendor.whatsappNumber || vendor.phoneNumber;
+      return await this.sendMessage(to, message, vendor.language);
   }
 
   // Send payment reminder
@@ -143,7 +147,8 @@ class WhatsAppService {
         ? `⚠️ Payment Reminder\n\nYour order ${order.orderId} never pay.\n\nAmount: ₦${order.totalAmount.toLocaleString()}\n\nAbeg complete your payment make we fit deliver your order.`
         : `⚠️ Payment Reminder\n\nYour order ${order.orderId} is awaiting payment.\n\nAmount: ₦${order.totalAmount.toLocaleString()}\n\nPlease complete payment to process your order.`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+      const to = vendor.whatsappNumber || vendor.phoneNumber;
+      return await this.sendMessage(to, message, vendor.language);
   }
 
   // Send broadcast message
@@ -158,7 +163,8 @@ class WhatsAppService {
     for (const vendor of vendors) {
       try {
         const msg = vendor.language === "pidgin" ? messagePidgin : message;
-        await this.sendMessage(vendor.phoneNumber, msg, vendor.language);
+          const to = vendor.whatsappNumber || vendor.phoneNumber;
+          await this.sendMessage(to, msg, vendor.language);
         results.success++;
 
         // Add small delay to avoid rate limiting
@@ -182,7 +188,8 @@ class WhatsAppService {
         ? `🔔 Subscription Reminder\n\nYour standing order go run tomorrow.\n\nQuantity: ${subscription.crateQuantity} crates\nDay: ${subscription.frequency}\n\nNo need to do anything, we go process am automatic.`
         : `🔔 Subscription Reminder\n\nYour standing order will be processed tomorrow.\n\nQuantity: ${subscription.crateQuantity} crates\nDay: ${subscription.frequency}\n\nNo action needed - we'll process it automatically.`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message, vendor.language);
   }
 
   // Send quality alert
@@ -202,7 +209,8 @@ class WhatsAppService {
     const message =
       alerts[alertType]?.[lang] || `Quality alert for order ${order.orderId}`;
 
-    return await this.sendMessage(vendor.phoneNumber, message, vendor.language);
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message, vendor.language);
   }
 }
 
@@ -216,22 +224,20 @@ class TwilioWhatsAppService {
 
   async sendMessage(to, message) {
     try {
+      const cleaned = String(to || '').replace(/[^0-9]/g, '');
+      if (!cleaned || cleaned.length < 8) {
+        const err = new Error(`Invalid phone number for Twilio WhatsApp: ${to}`);
+        console.error(err.message);
+        throw err;
+      }
+
       const response = await axios.post(
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
-        new URLSearchParams({
-          From: this.whatsappNumber,
-          To: `whatsapp:${to}`,
-          Body: message,
-        }),
-        {
-          auth: {
-            username: this.accountSid,
-            password: this.authToken,
-          },
-        },
+        new URLSearchParams({ From: this.whatsappNumber, To: `whatsapp:+${cleaned}`, Body: message }),
+        { auth: { username: this.accountSid, password: this.authToken } },
       );
 
-      console.log(`Twilio WhatsApp message sent to ${to}`);
+      console.log(`Twilio WhatsApp message sent to ${to} (cleaned: ${cleaned})`);
       return response.data;
     } catch (error) {
       console.error(
@@ -240,6 +246,107 @@ class TwilioWhatsAppService {
       );
       throw error;
     }
+  }
+
+  // High-level wrappers to match WhatsAppService API
+  async sendWelcomeMessage(vendor) {
+    const message =
+      vendor.language === "pidgin"
+        ? `Welcome to QOOA, ${vendor.vendorName}! 🍅\n\nYour vendor account is now active. You can start ordering fresh tomatoes.\n\nVendor ID: ${vendor.vendorId}\nMarket: ${vendor.marketCluster}\nStall: ${vendor.stallNumber}\n\nPlease check your email to verify your account.\n\nThank you for joining QOOA!`
+        : `Welcome to QOOA, ${vendor.vendorName}! 🍅\n\nYour vendor account is now active. You can start ordering fresh tomatoes.\n\nVendor ID: ${vendor.vendorId}\nMarket: ${vendor.marketCluster}\nStall: ${vendor.stallNumber}\n\nPlease check your email to verify your account.\n\nThank you for joining QOOA!`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
+  }
+
+  async sendOrderConfirmation(vendor, order) {
+    const message =
+      vendor.language === "pidgin"
+        ? `✅ Order Confirmed!\n\nYour order don enter successfully, ${vendor.vendorName}.\n\nOrder ID: ${order.orderId}\nQuantity: ${order.crateQuantity} crates\nTotal: ₦${order.totalAmount.toLocaleString()}\nDelivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}\n\nWe go send you update as your order dey move.\n\nThank you! 🍅`
+        : `✅ Order Confirmed!\n\nYour order has been confirmed, ${vendor.vendorName}.\n\nOrder ID: ${order.orderId}\nQuantity: ${order.crateQuantity} crates\nTotal: ₦${order.totalAmount.toLocaleString()}\nDelivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}\n\nWe'll keep you updated on your order status.\n\nThank you! 🍅`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
+  }
+
+  async sendTrackingUpdate(vendor, order, stage) {
+    // Simple mapping similar to WhatsAppService
+    const stageMessages = {
+      en: {
+        "in-transit": `🚚 Your order ${order.orderId} is now in transit from the North.\n\nEstimated arrival: ${new Date(order.deliveryDate).toLocaleDateString()}`,
+        "at-hub": `📦 Your order ${order.orderId} has arrived at Lagos hub.\n\nPreparing for final delivery.`,
+        "out-for-delivery": `🛵 Your order ${order.orderId} is out for delivery!\n\nExpected delivery time: ${order.deliveryTime}\n\nDriver: ${order.driverName || "TBA"}`,
+        delivered: `✅ Order ${order.orderId} has been delivered!\n\nPlease rate your order in the vendor portal.\n\nThank you for choosing QOOA! 🍅`,
+      },
+      pidgin: {
+        "in-transit": `🚚 Your order ${order.orderId} don leave from North, e dey come.\n\nE go reach: ${new Date(order.deliveryDate).toLocaleDateString()}`,
+        "at-hub": `📦 Your order ${order.orderId} don reach Lagos.\n\nWe dey prepare am for delivery.`,
+        "out-for-delivery": `🛵 Your order ${order.orderId} don dey for road!\n\nTime: ${order.deliveryTime}\n\nDriver: ${order.driverName || "TBA"}`,
+        delivered: `✅ Order ${order.orderId} don deliver!\n\nAbeg rate your order for vendor portal.\n\nThank you! 🍅`,
+      },
+    };
+
+    const lang = vendor.language === "pidgin" ? "pidgin" : "en";
+    const message = stageMessages[lang][stage] || `Order ${order.orderId} status: ${stage}`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
+  }
+
+  async sendPaymentReminder(vendor, order) {
+    const message =
+      vendor.language === "pidgin"
+        ? `⚠️ Payment Reminder\n\nYour order ${order.orderId} never pay.\n\nAmount: ₦${order.totalAmount.toLocaleString()}\n\nAbeg complete your payment make we fit deliver your order.`
+        : `⚠️ Payment Reminder\n\nYour order ${order.orderId} is awaiting payment.\n\nAmount: ₦${order.totalAmount.toLocaleString()}\n\nPlease complete payment to process your order.`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
+  }
+
+  async sendBroadcast(vendors, message, messagePidgin) {
+    const results = { total: vendors.length, success: 0, failed: 0, errors: [] };
+    for (const vendor of vendors) {
+      try {
+  const msg = vendor.language === "pidgin" ? messagePidgin : message;
+  const to = vendor.whatsappNumber || vendor.phoneNumber;
+  await this.sendMessage(to, msg);
+        results.success++;
+        await new Promise((r) => setTimeout(r, 100));
+      } catch (err) {
+        results.failed++;
+        results.errors.push({ vendorId: vendor.vendorId, error: err.message });
+      }
+    }
+    return results;
+  }
+
+  async sendSubscriptionReminder(vendor, subscription) {
+    const message =
+      vendor.language === "pidgin"
+        ? `🔔 Subscription Reminder\n\nYour standing order go run tomorrow.\n\nQuantity: ${subscription.crateQuantity} crates\nDay: ${subscription.frequency}\n\nNo need to do anything, we go process am automatic.`
+        : `🔔 Subscription Reminder\n\nYour standing order will be processed tomorrow.\n\nQuantity: ${subscription.crateQuantity} crates\nDay: ${subscription.frequency}\n\nNo action needed - we'll process it automatically.`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
+  }
+
+  async sendQualityAlert(vendor, order, alertType) {
+    const alerts = {
+      temperature: {
+        en: `⚠️ Quality Alert\n\nYour order ${order.orderId} experienced high temperature during transit.\n\nWe're monitoring closely to ensure quality.`,
+        pidgin: `⚠️ Quality Alert\n\nYour order ${order.orderId} hot too much for road.\n\nWe dey watch am well to make sure e fresh.`,
+      },
+      gas: {
+        en: `⚠️ Quality Alert\n\nEarly fermentation detected in order ${order.orderId}.\n\nWe're taking corrective action.`,
+        pidgin: `⚠️ Quality Alert\n\nYour order ${order.orderId} dey start to spoil small.\n\nWe dey handle am.`,
+      },
+    };
+
+    const lang = vendor.language === "pidgin" ? "pidgin" : "en";
+    const message = alerts[alertType]?.[lang] || `Quality alert for order ${order.orderId}`;
+
+    const to = vendor.whatsappNumber || vendor.phoneNumber;
+    return await this.sendMessage(to, message);
   }
 }
 

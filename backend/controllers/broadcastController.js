@@ -1,5 +1,5 @@
 const Broadcast = require("../models/Broadcast");
-const Vendor = require("../models/Vendor");
+const Vendor = require("../models/VendorRegistration");
 const whatsappService = require("../utils/whatsappService");
 const { sendBroadcastEmail } = require("../utils/emailService");
 const { asyncHandler } = require("../middleware/errorMiddleware");
@@ -54,11 +54,8 @@ const sendBroadcast = asyncHandler(async (req, res) => {
         // Send via WhatsApp
         if (sentVia === "whatsapp" || sentVia === "both") {
           const msg = vendor.language === "pidgin" ? messagePidgin : message;
-          await whatsappService.sendMessage(
-            vendor.phoneNumber,
-            msg,
-            vendor.language,
-          );
+          const to = vendor.whatsappNumber || vendor.phoneNumber;
+          await whatsappService.sendMessage(to, msg, vendor.language);
         }
 
         // Send via Email
