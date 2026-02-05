@@ -25,6 +25,7 @@ function setupEventListeners() {
 
   // Sidebar Navigation
   const navItems = document.querySelectorAll(".nav-item");
+  
   navItems.forEach((item) => {
     item.addEventListener("click", function (e) {
       e.preventDefault();
@@ -35,8 +36,8 @@ function setupEventListeners() {
       // Add active class to clicked item
       this.classList.add("active");
 
-      // Get the navigation text
-      const navText = this.textContent.trim();
+      // Get the navigation text (from the span, not the emoji)
+      const navText = this.querySelector("span:last-child").textContent.trim();
 
       // Switch view based on section
       switchView(navText);
@@ -75,15 +76,329 @@ function renderDashboard() {
   renderShipments();
 }
 
+// ========== SWITCH VIEW ==========
+function switchView(viewName) {
+  console.log("switchView called with:", viewName);
+  const mainContent = document.querySelector(".main-content");
+  
+  try {
+    switch (viewName) {
+      case "Dashboard":
+        console.log("Rendering Dashboard view");
+        renderDashboardView();
+        break;
+      case "Shipments":
+        console.log("Rendering Shipments view");
+      t mainContent = document.querySelector(".main-content");
+  
+  try {
+    switch (viewName) {
+      case "Dashboard":
+        renderDashboardView();
+        break;
+      case "Shipments":
+        renderShipmentsView();
+        break;
+      case "Live Telemetry":
+        renderTelemetryView();
+        break;
+      case "Reports":
+        renderReportsView();
+        break;
+      case "Settings":
+        renderSettingsView();
+        break;
+      default:
+        renderDashboardView();
+    }
+  } catch (error) {
+    console.error("Error in switchView:", error);
+    alert("An error occurred while switching views. Please refresh the page."
+  
+  mainContent.innerHTML = window.originalDashboardContent;
+  
+  // Re-setup event listeners for dynamic content
+  setupDynamicEventListeners();
+  
+  // Update dashboard data
+  updateStats();
+  renderShipments();
+}
+
+// ========== RENDER SHIPMENTS VIEW ==========
+function renderShipmentsView() {
+  const mainContent = document.querySelector(".main-content");
+  
+  mainContent.innerHTML = `
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1>📦 All Shipments</h1>
+        <p>Manage and track all shipments</p>
+      </div>
+      <div class="header-right">
+        <button id="newOrderBtn" class="btn-primary">➕ New Order</button>
+      </div>
+    </header>
+    
+    <section class="shipments-section">
+      <div id="shipmentsContainer">
+        <div class="loading">Loading shipments...</div>
+      </div>
+    </section>
+  `;
+  
+  setupDynamicEventListeners();
+  renderShipments();
+}
+
+// ========== RENDER TELEMETRY VIEW ==========
+function renderTelemetryView() {
+  const mainContent = document.querySelector(".main-content");
+  const shipments = getShipments();
+  
+  mainContent.innerHTML = `
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1>📡 Live Telemetry</h1>
+        <p>Real-time sensor monitoring for all shipments</p>
+      </div>
+    </header>
+    
+    <section class="shipments-section">
+      <div class="telemetry-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        ${shipments.map(shipment => {
+          const telemetry = getLatestTelemetry(shipment.id);
+          if (!telemetry) return '';
+          
+          const tempStatus = getTempStatus(telemetry.temperature);
+          const gasStatus = getGasStatus(telemetry.gasLevel);
+          
+          return `
+            <div class="sensor-card" style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="shipment-id" style="font-weight: bold;">${shipment.id}</div>
+                <span class="badge ${shipment.qualityStatus === 'Green' ? 'badge-green' : shipment.qualityStatus === 'Orange' ? 'badge-orange' : 'badge-red'}">${shipment.qualityStatus}</span>
+              </div>
+              <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">
+                🚛 ${shipment.truckId}<br>
+                📍 ${telemetry.location.name}
+              </div>
+              <div style="display: grid; gap: 12px;">
+                <div>
+                  <div style="font-size: 11px; color: #6b7280;">Temperature</div>
+                  <div class="sensor-value ${tempStatus.class}" style="font-size: 24px; font-weight: bold;">${telemetry.temperature}°C</div>
+                </div>
+                <div>
+                  <div style="font-size: 11px; color: #6b7280;">Ethylene Gas</div>
+                  <div class="sensor-value ${gasStatus.class}" style="font-size: 24px; font-weight: bold;">${telemetry.gasLevel} ppm</div>
+                </div>
+                <div>
+                  <div style="font-size: 11px; color: #6b7280;">Humidity</div>
+                  <div style="font-size: 24px; font-weight: bold;">${telemetry.humidity}%</div>
+                </div>
+                <button class="btn-small" onclick="openTruckModal('${shipment.id}')" style="margin-top: 8px;">
+                  View Details
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+}
+
+// ========== RENDER REPORTS VIEW ==========
+function renderReportsView() {
+  const mainContent = document.querySelector(".main-content");
+  const shipments = getShipments();
+  const stats = getStats();
+  
+  mainContent.innerHTML = `
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1>📋 Reports & Analytics</h1>
+        <p>Performance metrics and quality reports</p>
+      </div>
+    </header>
+    
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <h3>${stats.totalShipments}</h3>
+            <p>Total Shipments</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🚛</div>
+          <div class="stat-info">
+            <h3>${stats.inTransit}</h3>
+            <p>In Transit</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <h3>${stats.completed}</h3>
+            <p>Completed</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛡️</div>
+          <div class="stat-info">
+            <h3>${stats.bioShieldActive}</h3>
+            <p>Bio-Shield Active</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="shipments-section" style="margin-top: 24px;">
+      <h2>Quality Reports</h2>
+      <div style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e7eb;">
+              <th style="text-align: left; padding: 12px;">Shipment ID</th>
+              <th style="text-align: left; padding: 12px;">Route</th>
+              <th style="text-align: left; padding: 12px;">Quality Status</th>
+              <th style="text-align: left; padding: 12px;">Hub Triage</th>
+              <th style="text-align: left; padding: 12px;">Bio-Shield</th>
+              <th style="text-align: left; padding: 12px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${shipments.map(shipment => `
+              <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 12px; font-weight: 500;">${shipment.id}</td>
+                <td style="padding: 12px;">${shipment.origin} → ${shipment.destination}</td>
+                <td style="padding: 12px;">
+                  <span class="badge ${shipment.qualityStatus === 'Green' ? 'badge-green' : shipment.qualityStatus === 'Orange' ? 'badge-orange' : 'badge-red'}">${shipment.qualityStatus}</span>
+                </td>
+                <td style="padding: 12px;">
+                  <span class="badge ${getHubTriageDisplay(shipment.hubTriageDecision).class}">${getHubTriageDisplay(shipment.hubTriageDecision).label}</span>
+                </td>
+                <td style="padding: 12px;">
+                  ${shipment.bioShieldApplied ? '✅' : '❌'}
+                </td>
+                <td style="padding: 12px;">
+                  <button class="btn-small" onclick="${shipment.qualityStatus === 'Green' ? `generateFreshnessReport('${shipment.id}')` : 'alert(\'Report unavailable for this shipment\')'}" ${shipment.qualityStatus !== 'Green' ? 'disabled' : ''}>
+                    📄 Report
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+// ========== RENDER SETTINGS VIEW ==========
+function renderSettingsView() {
+  const mainContent = document.querySelector(".main-content");
+  
+  // Load saved settings from localStorage
+  const settings = JSON.parse(localStorage.getItem('qooa_settings')) || {
+    emailAlerts: true,
+    smsAlerts: true,
+    whatsappAlerts: false,
+    criticalTemp: 28,
+    criticalGas: 300
+  };
+  
+  mainContent.innerHTML = `
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1>⚙️ Settings</h1>
+        <p>Configure your dashboard preferences</p>
+      </div>
+    </header>
+    
+    <section class="shipments-section">
+      <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 800px;">
+        <h3 style="margin-bottom: 20px;">System Configuration</h3>
+        
+        <form id="settingsForm" style="display: grid; gap: 20px;">
+          <div>
+            <label style="display: block; font-weight: 500; margin-bottom: 8px;">Notification Preferences</label>
+            <label style="display: block; margin-bottom: 8px;">
+              <input type="checkbox" id="emailAlerts" ${settings.emailAlerts ? 'checked' : ''}> Email alerts for critical temperature
+            </label>
+            <label style="display: block; margin-bottom: 8px;">
+              <input type="checkbox" id="smsAlerts" ${settings.smsAlerts ? 'checked' : ''}> SMS alerts for gas level warnings
+            </label>
+            <label style="display: block; margin-bottom: 8px;">
+              <input type="checkbox" id="whatsappAlerts" ${settings.whatsappAlerts ? 'checked' : ''}> WhatsApp notifications
+            </label>
+          </div>
+          
+          <div>
+            <label style="display: block; font-weight: 500; margin-bottom: 8px;">Quality Thresholds</label>
+            <div style="display: grid; gap: 12px;">
+              <div>
+                <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 4px;">Critical Temperature (°C)</label>
+                <input type="number" id="criticalTemp" value="${settings.criticalTemp}" min="15" max="35" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 4px;">Critical Gas Level (ppm)</label>
+                <input type="number" id="criticalGas" value="${settings.criticalGas}" min="50" max="500" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label style="display: block; font-weight: 500; margin-bottom: 8px;">Hub Configuration</label>
+            <div style="background: #f9fafb; padding: 12px; border-radius: 4px;">
+              <p style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">Active Hubs:</p>
+              <p style="font-size: 14px;">📍 Kano Hub - Active</p>
+              <p style="font-size: 14px;">📍 Jos Hub - Active</p>
+            </div>
+          </div>
+          
+          <div style="padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <button type="submit" class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+            <button type="button" class="btn-secondary" style="margin-left: 12px;" onclick="resetSettings()">Reset to Default</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  `;
+  
+  // Add form submit listener
+  setTimeout(() => {
+    const settingsForm = document.querySelector('#settingsForm');
+    if (settingsForm) {
+      settingsForm.addEventListener('submit', saveSettings);
+    }
+  }, 0);
+}
+
+// ========== SETUP DYNAMIC EVENT LISTENERS ==========
+function setupDynamicEventListeners() {
+  // New Order Button
+  const newOrderBtn = document.getElementById("newOrderBtn");
+  if (newOrderBtn) {
+    newOrderBtn.addEventListener("click", openOrderModal);
+  }
+}
+
 // ========== UPDATE STATISTICS ==========
 function updateStats() {
   const stats = getStats();
 
-  document.getElementById("totalShipments").textContent = stats.totalShipments;
-  document.getElementById("inTransit").textContent = stats.inTransit;
-  document.getElementById("bioShieldActive").textContent =
-    stats.bioShieldActive;
-  document.getElementById("completed").textContent = stats.completed;
+  const totalShipmentsEl = document.getElementById("totalShipments");
+  const inTransitEl = document.getElementById("inTransit");
+  const bioShieldActiveEl = document.getElementById("bioShieldActive");
+  const completedEl = document.getElementById("completed");
+
+  if (totalShipmentsEl) totalShipmentsEl.textContent = stats.totalShipments;
+  if (inTransitEl) inTransitEl.textContent = stats.inTransit;
+  if (bioShieldActiveEl) bioShieldActiveEl.textContent = stats.bioShieldActive;
+  if (completedEl) completedEl.textContent = stats.completed;
 }
 
 // ========== RENDER SHIPMENTS (Main Function) ==========
@@ -401,4 +716,107 @@ function populateTelemetryTimeline(history) {
   });
 
   container.innerHTML += '</div>';
+}
+
+// ========== MODAL FUNCTIONS ==========
+function openOrderModal() {
+  const modal = document.getElementById("orderModal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
+
+function closeOrderModal() {
+  const modal = document.getElementById("orderModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+function closeTruckModal() {
+  const modal = document.getElementById("truckModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+function closeAllModals() {
+  const modals = document.querySelectorAll(".modal");
+  modals.forEach((modal) => {
+    modal.style.display = "none";
+  });
+}
+
+// ========== ADDITIONAL FUNCTIONS ==========
+function handleNewOrder(e) {
+  e.preventDefault();
+  
+  const origin = document.getElementById("orderOrigin").value;
+  const destination = document.getElementById("orderDestination").value;
+  const crates = document.getElementById("orderCrates").value;
+  const bioShield = document.getElementById("orderBioShield").checked;
+  
+  alert(`Order placed!\n\nOrigin: ${origin}\nDestination: ${destination}\nCrates: ${crates}\nBio-Shield: ${bioShield ? "Yes" : "No"}`);
+  
+  closeOrderModal();
+}
+
+function handleLogout() {
+  localStorage.removeItem("qooa_session");
+  window.location.href = "index.html";
+}
+
+function viewAlerts(shipmentId) {
+  const shipment = getShipmentById(shipmentId);
+  if (shipment && shipment.alerts) {
+    let alertMessage = `Alerts for ${shipment.id}:\n\n`;
+    shipment.alerts.forEach((alert, index) => {
+      alertMessage += `${index + 1}. [${alert.severity.toUpperCase()}] ${alert.message}\n`;
+    });
+    alert(alertMessage);
+  }
+}
+
+function generateFreshnessReport(shipmentId) {
+  const shipment = getShipmentById(shipmentId);
+  if (shipment) {
+    alert(`Freshness Certificate Generated!\n\nShipment: ${shipment.id}\nQuality Status: ${shipment.qualityStatus}\nTemperature: Maintained within range\nGas Levels: Within acceptable limits\n\nCertificate ID: FC-${Date.now()}`);
+  }
+}
+
+function showWhatsAppDemo() {
+  alert("📱 WhatsApp Integration Demo\n\nVendors can place orders by sending a simple message like:\n\n'Order 30 crates from Kano to Lagos'\n\nThe system automatically:\n✓ Validates the order\n✓ Schedules pickup\n✓ Sends tracking updates\n✓ Provides delivery confirmation\n\nNo app download required!");
+}
+
+function saveSettings(e) {
+  e.preventDefault();
+  
+  const settings = {
+    emailAlerts: document.getElementById('emailAlerts').checked,
+    smsAlerts: document.getElementById('smsAlerts').checked,
+    whatsappAlerts: document.getElementById('whatsappAlerts').checked,
+    criticalTemp: parseInt(document.getElementById('criticalTemp').value),
+    criticalGas: parseInt(document.getElementById('criticalGas').value)
+  };
+  
+  localStorage.setItem('qooa_settings', JSON.stringify(settings));
+  
+  alert('✅ Settings saved successfully!\n\nYour preferences have been updated.');
+}
+
+function resetSettings() {
+  const defaultSettings = {
+    emailAlerts: true,
+    smsAlerts: true,
+    whatsappAlerts: false,
+    criticalTemp: 28,
+    criticalGas: 300
+  };
+  
+  localStorage.setItem('qooa_settings', JSON.stringify(defaultSettings));
+  
+  // Re-render the settings view
+  renderSettingsView();
+  
+  alert('✅ Settings reset to default values!');
 }

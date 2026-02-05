@@ -284,6 +284,14 @@ function createNewOrder(orderData) {
 }
 
 /**
+ * Get all shipments
+ * @returns {array} - Array of all shipments
+ */
+function getShipments() {
+  return shipments;
+}
+
+/**
  * Get statistics summary
  * @returns {object} - Stats object with counts
  */

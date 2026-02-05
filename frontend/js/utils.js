@@ -163,6 +163,71 @@ function getHumidityStatus(humidity) {
   }
 }
 
+/**
+ * Get temperature status based on Hardware Workflow thresholds
+ * @param {number} temperature - Temperature in Celsius
+ * @returns {object} - Status object with class and label
+ */
+function getTempStatus(temperature) {
+  if (temperature >= 12 && temperature <= 20) {
+    return { class: "status-green", label: "Optimal", color: "#10b981" };
+  } else if (temperature >= 21 && temperature <= 27) {
+    return { class: "status-orange", label: "Warning", color: "#f59e0b" };
+  } else if (temperature > 27) {
+    return { class: "status-red", label: "CRITICAL", color: "#ef4444" };
+  } else {
+    return { class: "status-orange", label: "Too Cold", color: "#f59e0b" };
+  }
+}
+
+/**
+ * Get gas level status based on Hardware Workflow thresholds
+ * @param {number} gasLevel - Ethylene gas level in ppm
+ * @returns {object} - Status object with class and label
+ */
+function getGasStatus(gasLevel) {
+  if (gasLevel < 100) {
+    return { class: "status-green", label: "Safe", color: "#10b981" };
+  } else if (gasLevel >= 100 && gasLevel <= 300) {
+    return { class: "status-orange", label: "Warning", color: "#f59e0b" };
+  } else {
+    return { class: "status-red", label: "CRITICAL", color: "#ef4444" };
+  }
+}
+
+/**
+ * Get overall status for a reading
+ * @param {number} temperature - Temperature in Celsius
+ * @param {number} gasLevel - Gas level in ppm
+ * @returns {string} - CSS class for timeline marker
+ */
+function getOverallStatus(temperature, gasLevel) {
+  if (temperature > 27 || gasLevel > 300) {
+    return "status-red";
+  } else if ((temperature >= 21 && temperature <= 27) || (gasLevel >= 100 && gasLevel <= 300)) {
+    return "status-orange";
+  }
+  return "status-green";
+}
+
+/**
+ * Get hub triage display information
+ * @param {string} decision - Hub triage decision
+ * @returns {object} - Display info with icon, label, and class
+ */
+function getHubTriageDisplay(decision) {
+  switch (decision) {
+    case "APPROVED":
+      return { icon: "🟢", label: "Approved", class: "badge-green" };
+    case "REJECTED":
+      return { icon: "🔴", label: "Rejected", class: "badge-red" };
+    case "FIELD_HEAT_EXTRACTED":
+      return { icon: "🟡", label: "Heat Extracted", class: "badge-orange" };
+    default:
+      return { icon: "⚪", label: "Pending", class: "badge" };
+  }
+}
+
 // ========== STATUS BADGE HELPERS ==========
 /**
  * Get HTML class for status badge
