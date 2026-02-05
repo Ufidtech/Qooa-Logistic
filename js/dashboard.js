@@ -25,13 +25,13 @@ function setupEventListeners() {
 
   // Sidebar Navigation
   const navItems = document.querySelectorAll(".nav-item");
-  console.log('Navigation items found:', navItems.length);
-  
+  console.log("Navigation items found:", navItems.length);
+
   navItems.forEach((item) => {
     item.addEventListener("click", function (e) {
       e.preventDefault();
-      
-      console.log('Nav item clicked');
+
+      console.log("Nav item clicked");
 
       // Remove active class from all items
       navItems.forEach((nav) => nav.classList.remove("active"));
@@ -40,9 +40,11 @@ function setupEventListeners() {
       this.classList.add("active");
 
       // Get the navigation text (only the text span, not the icon)
-      const textSpan = this.querySelector('span:not(.nav-icon)');
-      const navText = textSpan ? textSpan.textContent.trim() : this.textContent.trim();
-      console.log('Switching to view:', navText);
+      const textSpan = this.querySelector("span:not(.nav-icon)");
+      const navText = textSpan
+        ? textSpan.textContent.trim()
+        : this.textContent.trim();
+      console.log("Switching to view:", navText);
 
       // Switch view based on section
       switchView(navText);
@@ -639,18 +641,19 @@ function handleLogout() {
 // ========== VIEW SWITCHING ==========
 function switchView(viewName) {
   try {
-    console.log('switchView called with:', viewName);
-    
+    console.log("switchView called with:", viewName);
+
     // Update header title
     const headerTitle = document.querySelector(".header-left h1");
     const headerSubtitle = document.querySelector(".header-left p");
-    
-    console.log('Header elements found:', headerTitle, headerSubtitle);
+
+    console.log("Header elements found:", headerTitle, headerSubtitle);
 
     switch (viewName) {
       case "Dashboard":
         headerTitle.textContent = "Logistics Control Tower";
-        headerSubtitle.textContent = "Real-time monitoring • 3 active shipments";
+        headerSubtitle.textContent =
+          "Real-time monitoring • 3 active shipments";
         document.querySelector(".stats-section").style.display = "block";
         document.querySelector(".shipments-section h2").textContent =
           "Active Shipments";
@@ -659,7 +662,8 @@ function switchView(viewName) {
 
       case "Shipments":
         headerTitle.textContent = "All Shipments";
-        headerSubtitle.textContent = "Complete shipment tracking and management";
+        headerSubtitle.textContent =
+          "Complete shipment tracking and management";
         document.querySelector(".stats-section").style.display = "none";
         document.querySelector(".shipments-section h2").textContent =
           "Shipment List";
@@ -691,15 +695,15 @@ function switchView(viewName) {
         renderSettingsView();
         showNotification("⚙️ System configuration");
         break;
-        
+
       default:
-        console.log('Unknown view:', viewName);
+        console.log("Unknown view:", viewName);
     }
-    
-    console.log('View switch completed successfully');
+
+    console.log("View switch completed successfully");
   } catch (error) {
-    console.error('Error in switchView:', error);
-    alert('Error switching views: ' + error.message);
+    console.error("Error in switchView:", error);
+    alert("Error switching views: " + error.message);
   }
 }
 
@@ -1135,21 +1139,23 @@ function closeOrderModal() {
 // ========== SAVE SETTINGS ==========
 function saveSettings() {
   const settings = {
-    tempThreshold: document.getElementById('tempThreshold').value,
-    gasThreshold: document.getElementById('gasThreshold').value,
-    alertEmail: document.getElementById('alertEmail').value,
-    smsAlerts: document.getElementById('smsAlerts').checked,
-    autoReports: document.getElementById('autoReports').checked,
-    savedAt: new Date().toISOString()
+    tempThreshold: document.getElementById("tempThreshold").value,
+    gasThreshold: document.getElementById("gasThreshold").value,
+    alertEmail: document.getElementById("alertEmail").value,
+    smsAlerts: document.getElementById("smsAlerts").checked,
+    autoReports: document.getElementById("autoReports").checked,
+    savedAt: new Date().toISOString(),
   };
-  
+
   // Save to localStorage
-  localStorage.setItem('qooa_settings', JSON.stringify(settings));
-  
+  localStorage.setItem("qooa_settings", JSON.stringify(settings));
+
   // Show success message
-  showNotification(`✅ Settings saved successfully! Temp: ${settings.tempThreshold}°C | Gas: ${settings.gasThreshold}ppm`);
-  
-  console.log('Settings saved:', settings);
+  showNotification(
+    `✅ Settings saved successfully! Temp: ${settings.tempThreshold}°C | Gas: ${settings.gasThreshold}ppm`,
+  );
+
+  console.log("Settings saved:", settings);
 }
 
 // Make functions globally accessible for inline onclick handlers
