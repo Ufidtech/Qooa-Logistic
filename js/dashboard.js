@@ -25,9 +25,13 @@ function setupEventListeners() {
 
   // Sidebar Navigation
   const navItems = document.querySelectorAll(".nav-item");
+  console.log('Navigation items found:', navItems.length);
+  
   navItems.forEach((item) => {
     item.addEventListener("click", function (e) {
       e.preventDefault();
+      
+      console.log('Nav item clicked');
 
       // Remove active class from all items
       navItems.forEach((nav) => nav.classList.remove("active"));
@@ -35,8 +39,10 @@ function setupEventListeners() {
       // Add active class to clicked item
       this.classList.add("active");
 
-      // Get the navigation text
-      const navText = this.textContent.trim();
+      // Get the navigation text (only the text span, not the icon)
+      const textSpan = this.querySelector('span:not(.nav-icon)');
+      const navText = textSpan ? textSpan.textContent.trim() : this.textContent.trim();
+      console.log('Switching to view:', navText);
 
       // Switch view based on section
       switchView(navText);
@@ -632,54 +638,68 @@ function handleLogout() {
 
 // ========== VIEW SWITCHING ==========
 function switchView(viewName) {
-  // Update header title
-  const headerTitle = document.querySelector(".header-left h1");
-  const headerSubtitle = document.querySelector(".header-left p");
+  try {
+    console.log('switchView called with:', viewName);
+    
+    // Update header title
+    const headerTitle = document.querySelector(".header-left h1");
+    const headerSubtitle = document.querySelector(".header-left p");
+    
+    console.log('Header elements found:', headerTitle, headerSubtitle);
 
-  switch (viewName) {
-    case "Dashboard":
-      headerTitle.textContent = "Logistics Control Tower";
-      headerSubtitle.textContent = "Real-time monitoring • 3 active shipments";
-      document.querySelector(".stats-section").style.display = "block";
-      document.querySelector(".shipments-section h2").textContent =
-        "Active Shipments";
-      renderShipments();
-      break;
+    switch (viewName) {
+      case "Dashboard":
+        headerTitle.textContent = "Logistics Control Tower";
+        headerSubtitle.textContent = "Real-time monitoring • 3 active shipments";
+        document.querySelector(".stats-section").style.display = "block";
+        document.querySelector(".shipments-section h2").textContent =
+          "Active Shipments";
+        renderShipments();
+        break;
 
-    case "Shipments":
-      headerTitle.textContent = "All Shipments";
-      headerSubtitle.textContent = "Complete shipment tracking and management";
-      document.querySelector(".stats-section").style.display = "none";
-      document.querySelector(".shipments-section h2").textContent =
-        "Shipment List";
-      renderShipments();
-      showNotification("📦 Viewing all shipments");
-      break;
+      case "Shipments":
+        headerTitle.textContent = "All Shipments";
+        headerSubtitle.textContent = "Complete shipment tracking and management";
+        document.querySelector(".stats-section").style.display = "none";
+        document.querySelector(".shipments-section h2").textContent =
+          "Shipment List";
+        renderShipments();
+        showNotification("📦 Viewing all shipments");
+        break;
 
-    case "Live Telemetry":
-      headerTitle.textContent = "Live Telemetry Stream";
-      headerSubtitle.textContent =
-        "Real-time sensor monitoring across all trucks";
-      document.querySelector(".stats-section").style.display = "none";
-      renderTelemetryView();
-      showNotification("📡 Live sensor data streaming");
-      break;
+      case "Live Telemetry":
+        headerTitle.textContent = "Live Telemetry Stream";
+        headerSubtitle.textContent =
+          "Real-time sensor monitoring across all trucks";
+        document.querySelector(".stats-section").style.display = "none";
+        renderTelemetryView();
+        showNotification("📡 Live sensor data streaming");
+        break;
 
-    case "Reports":
-      headerTitle.textContent = "Analytics & Reports";
-      headerSubtitle.textContent = "Quality insights and performance metrics";
-      document.querySelector(".stats-section").style.display = "block";
-      renderReportsView();
-      showNotification("📊 Generating analytics report");
-      break;
+      case "Reports":
+        headerTitle.textContent = "Analytics & Reports";
+        headerSubtitle.textContent = "Quality insights and performance metrics";
+        document.querySelector(".stats-section").style.display = "block";
+        renderReportsView();
+        showNotification("📊 Generating analytics report");
+        break;
 
-    case "Settings":
-      headerTitle.textContent = "System Settings";
-      headerSubtitle.textContent = "Configure alerts and thresholds";
-      document.querySelector(".stats-section").style.display = "none";
-      renderSettingsView();
-      showNotification("⚙️ System configuration");
-      break;
+      case "Settings":
+        headerTitle.textContent = "System Settings";
+        headerSubtitle.textContent = "Configure alerts and thresholds";
+        document.querySelector(".stats-section").style.display = "none";
+        renderSettingsView();
+        showNotification("⚙️ System configuration");
+        break;
+        
+      default:
+        console.log('Unknown view:', viewName);
+    }
+    
+    console.log('View switch completed successfully');
+  } catch (error) {
+    console.error('Error in switchView:', error);
+    alert('Error switching views: ' + error.message);
   }
 }
 
@@ -895,38 +915,38 @@ function renderSettingsView() {
             
             <div class="form-group">
                 <label>🌡️ Temperature Alert Threshold</label>
-                <input type="number" value="28" class="form-control" disabled>
+                <input type="number" id="tempThreshold" value="28" min="0" max="50">
                 <small style="color: #6b7280;">Alert when temperature exceeds this value (°C)</small>
             </div>
             
             <div class="form-group">
                 <label>💨 Gas Level Alert Threshold</label>
-                <input type="number" value="300" class="form-control" disabled>
+                <input type="number" id="gasThreshold" value="300" min="0" max="1000">
                 <small style="color: #6b7280;">Alert when gas level exceeds this value (ppm)</small>
             </div>
             
             <div class="form-group">
                 <label>📧 Email Notifications</label>
-                <input type="email" value="vendor@example.com" class="form-control" disabled>
+                <input type="email" id="alertEmail" value="vendor@example.com" placeholder="your@email.com">
                 <small style="color: #6b7280;">Receive alerts at this email address</small>
             </div>
             
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" checked disabled>
+                    <input type="checkbox" id="smsAlerts" checked>
                     Enable real-time SMS alerts
                 </label>
             </div>
             
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" checked disabled>
+                    <input type="checkbox" id="autoReports" checked>
                     Auto-generate freshness reports for Green shipments
                 </label>
             </div>
             
-            <button class="btn-primary" style="margin-top: 20px; opacity: 0.6; cursor: not-allowed;" disabled>
-                Save Settings (Demo Mode)
+            <button class="btn-primary" style="margin-top: 20px;" onclick="saveSettings()">
+                💾 Save Settings
             </button>
         </div>
         
@@ -1112,6 +1132,26 @@ function closeOrderModal() {
   document.getElementById("orderModal").style.display = "none";
 }
 
+// ========== SAVE SETTINGS ==========
+function saveSettings() {
+  const settings = {
+    tempThreshold: document.getElementById('tempThreshold').value,
+    gasThreshold: document.getElementById('gasThreshold').value,
+    alertEmail: document.getElementById('alertEmail').value,
+    smsAlerts: document.getElementById('smsAlerts').checked,
+    autoReports: document.getElementById('autoReports').checked,
+    savedAt: new Date().toISOString()
+  };
+  
+  // Save to localStorage
+  localStorage.setItem('qooa_settings', JSON.stringify(settings));
+  
+  // Show success message
+  showNotification(`✅ Settings saved successfully! Temp: ${settings.tempThreshold}°C | Gas: ${settings.gasThreshold}ppm`);
+  
+  console.log('Settings saved:', settings);
+}
+
 // Make functions globally accessible for inline onclick handlers
 window.openTruckModal = openTruckModal;
 window.closeTruckModal = closeTruckModal;
@@ -1122,3 +1162,4 @@ window.getStatusColor = getStatusColor;
 window.getStatusBadgeClass = getStatusBadgeClass;
 window.getRelativeTime = getRelativeTime;
 window.showWhatsAppDemo = showWhatsAppDemo;
+window.saveSettings = saveSettings;
