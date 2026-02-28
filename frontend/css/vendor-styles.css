@@ -432,3 +432,178 @@ body {
   width: auto; /* allow narrower button inside modal */
   min-width: 140px;
 }
+/* ========== Toast Notifications ========== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  min-width: 300px;
+  max-width: 450px;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  pointer-events: all;
+}
+
+.toast-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-icon {
+  font-size: 20px;
+  font-weight: bold;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dark);
+}
+
+.toast-success {
+  border-left: 4px solid var(--success-green);
+}
+
+.toast-success .toast-icon {
+  color: var(--success-green);
+  background: #d1fae5;
+}
+
+.toast-error {
+  border-left: 4px solid var(--error-red);
+}
+
+.toast-error .toast-icon {
+  color: var(--error-red);
+  background: #fee2e2;
+}
+
+.toast-info {
+  border-left: 4px solid var(--accent-blue);
+}
+
+.toast-info .toast-icon {
+  color: var(--accent-blue);
+  background: #dbeafe;
+}
+
+.toast-warning {
+  border-left: 4px solid var(--warning-orange);
+}
+
+.toast-warning .toast-icon {
+  color: var(--warning-orange);
+  background: #fed7aa;
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 1024px) {
+  .onboarding-container {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+  
+  .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .vendor-header .header-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .vendor-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .order-card {
+    padding: 20px;
+  }
+  
+  .language-toggle {
+    top: 10px;
+    right: 10px;
+  }
+  
+  .toast-container {
+    right: 10px;
+    left: 10px;
+    top: 10px;
+  }
+  
+  .toast {
+    min-width: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .onboarding-page {
+    padding: 20px 10px;
+  }
+  
+  .onboarding-card {
+    padding: 24px;
+  }
+  
+  .logo-section h1 {
+    font-size: 36px;
+  }
+  
+  .vendor-header {
+    padding: 16px;
+  }
+  
+  .vendor-main {
+    padding: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .section-header h2 {
+    font-size: 20px;
+  }
+  
+  .quantity-selector {
+    width: 100%;
+  }
+  
+  .btn-primary {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}

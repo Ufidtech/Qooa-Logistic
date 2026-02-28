@@ -1,5 +1,38 @@
 // QOOA Control Tower - Dashboard Logic
 
+// ========== NOTIFICATION SYSTEM ==========
+function showNotification(message, type = 'success') {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.getElementById('toastContainer');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toastContainer';
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  // Animate in
+  setTimeout(() => toast.classList.add('toast-show'), 10);
+
+  // Remove after 4 seconds
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
 // ========== AUTHENTICATION CHECK ==========
 function checkAuthentication() {
   const session = localStorage.getItem("qooa_session");
@@ -89,14 +122,6 @@ function switchView(viewName) {
         break;
       case "Shipments":
         console.log("Rendering Shipments view");
-      t mainContent = document.querySelector(".main-content");
-  
-  try {
-    switch (viewName) {
-      case "Dashboard":
-        renderDashboardView();
-        break;
-      case "Shipments":
         renderShipmentsView();
         break;
       case "Live Telemetry":
@@ -113,16 +138,8 @@ function switchView(viewName) {
     }
   } catch (error) {
     console.error("Error in switchView:", error);
-    alert("An error occurred while switching views. Please refresh the page."
-  
-  mainContent.innerHTML = window.originalDashboardContent;
-  
-  // Re-setup event listeners for dynamic content
-  setupDynamicEventListeners();
-  
-  // Update dashboard data
-  updateStats();
-  renderShipments();
+    showNotification("An error occurred while switching views. Please try again.", "error");
+  }
 }
 
 // ========== RENDER SHIPMENTS VIEW ==========
@@ -756,7 +773,12 @@ function handleNewOrder(e) {
   const crates = document.getElementById("orderCrates").value;
   const bioShield = document.getElementById("orderBioShield").checked;
   
-  alert(`Order placed!\n\nOrigin: ${origin}\nDestination: ${destination}\nCrates: ${crates}\nBio-Shield: ${bioShield ? "Yes" : "No"}`);
+  showNotification(`Order placed! ${crates} crates from ${origin} to ${destination} ${bioShield ? '(with Bio-Shield)' : ''}`, 'success');
+  
+  // Add new order to dashboard
+  setTimeout(() => {
+    renderDashboard();
+  }, 500);
   
   closeOrderModal();
 }
@@ -768,24 +790,27 @@ function handleLogout() {
 
 function viewAlerts(shipmentId) {
   const shipment = getShipmentById(shipmentId);
-  if (shipment && shipment.alerts) {
-    let alertMessage = `Alerts for ${shipment.id}:\n\n`;
-    shipment.alerts.forEach((alert, index) => {
-      alertMessage += `${index + 1}. [${alert.severity.toUpperCase()}] ${alert.message}\n`;
+  if (shipment && shipment.alerts && shipment.alerts.length > 0) {
+    shipment.alerts.forEach((alert) => {
+      const type = alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info';
+      showNotification(`${shipment.id}: ${alert.message}`, type);
     });
-    alert(alertMessage);
+  } else {
+    showNotification(`No alerts for ${shipmentId}`, 'info');
   }
 }
 
 function generateFreshnessReport(shipmentId) {
   const shipment = getShipmentById(shipmentId);
   if (shipment) {
-    alert(`Freshness Certificate Generated!\n\nShipment: ${shipment.id}\nQuality Status: ${shipment.qualityStatus}\nTemperature: Maintained within range\nGas Levels: Within acceptable limits\n\nCertificate ID: FC-${Date.now()}`);
+    const certId = `FC-${Date.now()}`;
+    showNotification(`📄 Freshness Certificate Generated! ID: ${certId}`, 'success');
+    console.log(`Certificate Details - ${shipment.id}: Quality ${shipment.qualityStatus}`);
   }
 }
 
 function showWhatsAppDemo() {
-  alert("📱 WhatsApp Integration Demo\n\nVendors can place orders by sending a simple message like:\n\n'Order 30 crates from Kano to Lagos'\n\nThe system automatically:\n✓ Validates the order\n✓ Schedules pickup\n✓ Sends tracking updates\n✓ Provides delivery confirmation\n\nNo app download required!");
+  showNotification("📱 WhatsApp Demo: Vendors send 'Order 30 crates from Kano to Lagos' - zero app downloads!", 'info');
 }
 
 function saveSettings(e) {
@@ -801,7 +826,7 @@ function saveSettings(e) {
   
   localStorage.setItem('qooa_settings', JSON.stringify(settings));
   
-  alert('✅ Settings saved successfully!\n\nYour preferences have been updated.');
+  showNotification('Settings saved successfully!', 'success');
 }
 
 function resetSettings() {
@@ -818,5 +843,5 @@ function resetSettings() {
   // Re-render the settings view
   renderSettingsView();
   
-  alert('✅ Settings reset to default values!');
+  showNotification('Settings reset to default values!', 'success');
 }
